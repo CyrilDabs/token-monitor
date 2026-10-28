@@ -635,7 +635,7 @@ function updateClaude(now) {
 }
 
 function evalJS(js) {
-    if (web) web.evaluateJavaScriptCompletionHandler($(js), null);
+    if (web) web.evaluateJavaScriptCompletionHandler($(js), function (result, error) {});
 }
 function toPageJson(obj) {
     return JSON.stringify(obj).split(String.fromCharCode(0x2028)).join('\\u2028').split(String.fromCharCode(0x2029)).join('\\u2029');
@@ -830,7 +830,7 @@ var PAGE = [
 '}',
 'function list(items){return (items||[]).map(itemHtml).join("");}',
 'var small=false,inDlg=false,last=null;',
-'function sendHeight(){setTimeout(function(){post({type:"height",h:document.documentElement.scrollHeight});},0);}',
+'function sendHeight(){setTimeout(function(){var v=inDlg?el("dlg"):el("main");post({type:"height",h:Math.ceil(v.getBoundingClientRect().bottom)+14});},0);}',
 'function render(m){',
 '  last=m;var c=m.claude;',
 '  el("project").textContent=c.project;',
@@ -887,7 +887,6 @@ var PAGE = [
 // ---------- Objective-C glue ----------
 ObjC.registerSubclass({
     name: 'TMBridge',
-    protocols: ['WKScriptMessageHandler'],
     methods: {
         'userContentController:didReceiveScriptMessage:': {
             types: ['void', ['id', 'id']],
@@ -905,11 +904,10 @@ ObjC.registerSubclass({
 });
 ObjC.registerSubclass({
     name: 'TMWindowDelegate',
-    protocols: ['NSWindowDelegate'],
     methods: {
         'windowWillClose:': {
             types: ['void', ['id']],
-            implementation: function (n) { $.NSApplication.sharedApplication.terminate(null); }
+            implementation: function (n) { $.NSApplication.sharedApplication.terminate($()); }
         }
     }
 });
@@ -947,15 +945,15 @@ function startWindow() {
     try { web.setValueForKey($.NSNumber.numberWithBool(false), $('drawsBackground')); } catch (e) {}
     web.setAutoresizingMask(2 | 16);   // stretch with the window
     panel.setContentView(web);
-    web.loadHTMLStringBaseURL($(PAGE), null);
+    web.loadHTMLStringBaseURL($(PAGE), $());
 
     lastHeight = h;
     app.activateIgnoringOtherApps(true);
-    panel.makeKeyAndOrderFront(null);
+    panel.makeKeyAndOrderFront($());
     panel.orderFrontRegardless;
 
     ticker = $.TMTicker.alloc.init;
-    timer = $.NSTimer.scheduledTimerWithTimeIntervalTargetSelectorUserInfoRepeats(REFRESH_SECONDS, ticker, 'tick:', null, true);
+    timer = $.NSTimer.scheduledTimerWithTimeIntervalTargetSelectorUserInfoRepeats(REFRESH_SECONDS, ticker, 'tick:', $(), true);
 
     app.run;
 }
